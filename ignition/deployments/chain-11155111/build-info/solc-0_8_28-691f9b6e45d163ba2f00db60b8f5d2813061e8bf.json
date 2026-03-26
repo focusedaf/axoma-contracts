@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-691f9b6e45d163ba2f00db60b8f5d2813061e8bf",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/ResultRegistry.sol": "project/contracts/ResultRegistry.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/ResultRegistry.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ninterface IExamRegistry {\r\n    function getExam(uint256 _examId)\r\n        external\r\n        view\r\n        returns (\r\n            uint256 id,\r\n            address issuer,\r\n            string memory ipfsHash,\r\n            uint256 publishedAt,\r\n            bool active\r\n        );\r\n}\r\n\r\ncontract ResultRegistry {\r\n\r\n    struct Result {\r\n        uint256 id;\r\n        uint256 examId;\r\n        address issuer;\r\n        string ipfsHash;\r\n        uint256 publishedAt;\r\n        bool active;\r\n    }\r\n\r\n    uint256 public nextResultId;\r\n    mapping(uint256 => Result) public results;\r\n\r\n    IExamRegistry public examRegistry;\r\n\r\n    event ResultPublished(\r\n        uint256 indexed resultId,\r\n        uint256 indexed examId,\r\n        address indexed issuer,\r\n        string ipfsHash,\r\n        uint256 timestamp\r\n    );\r\n\r\n    event ResultDeactivated(\r\n        uint256 indexed resultId,\r\n        address indexed issuer,\r\n        uint256 timestamp\r\n    );\r\n\r\n    constructor(address _examRegistryAddress) {\r\n        examRegistry = IExamRegistry(_examRegistryAddress);\r\n    }\r\n\r\n    modifier onlyExamIssuer(uint256 _examId) {\r\n        (\r\n            ,\r\n            address issuer,\r\n            ,\r\n            ,\r\n            bool active\r\n        ) = examRegistry.getExam(_examId);\r\n\r\n        require(active, \"Exam inactive\");\r\n        require(issuer == msg.sender, \"Not exam issuer\");\r\n        _;\r\n    }\r\n\r\n    function publishResult(\r\n        uint256 _examId,\r\n        string calldata _ipfsHash\r\n    )\r\n        external\r\n        onlyExamIssuer(_examId)\r\n    {\r\n        require(bytes(_ipfsHash).length > 0, \"Invalid IPFS hash\");\r\n\r\n        results[nextResultId] = Result({\r\n            id: nextResultId,\r\n            examId: _examId,\r\n            issuer: msg.sender,\r\n            ipfsHash: _ipfsHash,\r\n            publishedAt: block.timestamp,\r\n            active: true\r\n        });\r\n\r\n        emit ResultPublished(\r\n            nextResultId,\r\n            _examId,\r\n            msg.sender,\r\n            _ipfsHash,\r\n            block.timestamp\r\n        );\r\n\r\n        nextResultId++;\r\n    }\r\n\r\n    function deactivateResult(uint256 _resultId)\r\n        external\r\n    {\r\n        require(\r\n            results[_resultId].issuer == msg.sender,\r\n            \"Not result issuer\"\r\n        );\r\n\r\n        require(results[_resultId].active, \"Already inactive\");\r\n\r\n        results[_resultId].active = false;\r\n\r\n        emit ResultDeactivated(\r\n            _resultId,\r\n            msg.sender,\r\n            block.timestamp\r\n        );\r\n    }\r\n\r\n    function getResult(uint256 _resultId)\r\n        external\r\n        view\r\n        returns (Result memory)\r\n    {\r\n        return results[_resultId];\r\n    }\r\n}\r\n"
+      }
+    }
+  }
+}

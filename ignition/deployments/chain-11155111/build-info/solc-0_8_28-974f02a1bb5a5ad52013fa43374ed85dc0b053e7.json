@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-974f02a1bb5a5ad52013fa43374ed85dc0b053e7",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/IssuerRegistry.sol": "project/contracts/IssuerRegistry.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/IssuerRegistry.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ncontract IssuerRegistry {\r\n\r\n    address public admin;\r\n\r\n    struct Issuer {\r\n        bool approved;\r\n        bool suspended;\r\n        uint256 approvedAt;\r\n    }\r\n\r\n    mapping(address => Issuer) private issuers;\r\n\r\n    event IssuerApproved(address indexed issuer);\r\n    event IssuerSuspended(address indexed issuer);\r\n    event IssuerReinstated(address indexed issuer);\r\n\r\n    modifier onlyAdmin() {\r\n        require(msg.sender == admin, \"Not admin\");\r\n        _;\r\n    }\r\n\r\n    constructor() {\r\n        admin = msg.sender;\r\n    }\r\n\r\n    function approveIssuer(address _issuer) external onlyAdmin {\r\n        issuers[_issuer] = Issuer(true, false, block.timestamp);\r\n        emit IssuerApproved(_issuer);\r\n    }\r\n\r\n    function suspendIssuer(address _issuer) external onlyAdmin {\r\n        require(issuers[_issuer].approved, \"Not approved\");\r\n        issuers[_issuer].suspended = true;\r\n        emit IssuerSuspended(_issuer);\r\n    }\r\n\r\n    function reinstateIssuer(address _issuer) external onlyAdmin {\r\n        require(issuers[_issuer].approved, \"Not approved\");\r\n        issuers[_issuer].suspended = false;\r\n        emit IssuerReinstated(_issuer);\r\n    }\r\n\r\n    function isIssuerApproved(address _issuer)\r\n        external\r\n        view\r\n        returns (bool)\r\n    {\r\n        return issuers[_issuer].approved && !issuers[_issuer].suspended;\r\n    }\r\n}\r\n"
+      }
+    }
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "_format": "hh3-sol-build-info-1",
+  "id": "solc-0_8_28-0c2160660079d96545f5c5824bad6ef9b26a9593",
+  "solcVersion": "0.8.28",
+  "solcLongVersion": "0.8.28+commit.7893614a",
+  "userSourceNameMap": {
+    "contracts/ExamRegistry.sol": "project/contracts/ExamRegistry.sol"
+  },
+  "input": {
+    "language": "Solidity",
+    "settings": {
+      "evmVersion": "cancun",
+      "optimizer": {
+        "enabled": true,
+        "runs": 200
+      },
+      "outputSelection": {
+        "*": {
+          "": [
+            "ast"
+          ],
+          "*": [
+            "abi",
+            "evm.bytecode",
+            "evm.deployedBytecode",
+            "evm.methodIdentifiers",
+            "metadata"
+          ]
+        }
+      },
+      "remappings": []
+    },
+    "sources": {
+      "project/contracts/ExamRegistry.sol": {
+        "content": "// SPDX-License-Identifier: MIT\r\npragma solidity ^0.8.20;\r\n\r\ninterface IIssuerRegistry {\r\n    function isIssuerApproved(address _issuer)\r\n        external\r\n        view\r\n        returns (bool);\r\n}\r\n\r\ncontract ExamRegistry {\r\n\r\n    struct Exam {\r\n        uint256 id;\r\n        address issuer;\r\n        string ipfsHash;\r\n        uint256 publishedAt;\r\n        bool active;\r\n    }\r\n\r\n    uint256 public nextExamId;\r\n    mapping(uint256 => Exam) public exams;\r\n\r\n    IIssuerRegistry public issuerRegistry;\r\n\r\n    event ExamPublished(\r\n        uint256 indexed examId,\r\n        address indexed issuer,\r\n        string ipfsHash,\r\n        uint256 timestamp\r\n    );\r\n\r\n    event ExamDeactivated(\r\n        uint256 indexed examId,\r\n        address indexed issuer,\r\n        uint256 timestamp\r\n    );\r\n\r\n    constructor(address _issuerRegistryAddress) {\r\n        issuerRegistry = IIssuerRegistry(_issuerRegistryAddress);\r\n    }\r\n\r\n    modifier onlyApprovedIssuer() {\r\n        require(\r\n            issuerRegistry.isIssuerApproved(msg.sender),\r\n            \"Not approved or suspended\"\r\n        );\r\n        _;\r\n    }\r\n\r\n    modifier onlyExamIssuer(uint256 _examId) {\r\n        require(\r\n            exams[_examId].issuer == msg.sender,\r\n            \"Not exam issuer\"\r\n        );\r\n        _;\r\n    }\r\n\r\n    function publishExam(string calldata _ipfsHash)\r\n        external\r\n        onlyApprovedIssuer\r\n    {\r\n        require(bytes(_ipfsHash).length > 0, \"Invalid IPFS hash\");\r\n\r\n        exams[nextExamId] = Exam({\r\n            id: nextExamId,\r\n            issuer: msg.sender,\r\n            ipfsHash: _ipfsHash,\r\n            publishedAt: block.timestamp,\r\n            active: true\r\n        });\r\n\r\n        emit ExamPublished(\r\n            nextExamId,\r\n            msg.sender,\r\n            _ipfsHash,\r\n            block.timestamp\r\n        );\r\n\r\n        nextExamId++;\r\n    }\r\n\r\n    function deactivateExam(uint256 _examId)\r\n        external\r\n        onlyExamIssuer(_examId)\r\n    {\r\n        require(exams[_examId].active, \"Already inactive\");\r\n\r\n        exams[_examId].active = false;\r\n\r\n        emit ExamDeactivated(\r\n            _examId,\r\n            msg.sender,\r\n            block.timestamp\r\n        );\r\n    }\r\n\r\n    function getExam(uint256 _examId)\r\n        external\r\n        view\r\n        returns (Exam memory)\r\n    {\r\n        return exams[_examId];\r\n    }\r\n}\r\n"
+      }
+    }
+  }
+}
